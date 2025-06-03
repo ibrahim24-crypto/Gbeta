@@ -43,7 +43,6 @@
       transform: translate(-50%, -50%);
       color: yellow;
       font-size: 48px;
-      font-family: Arial, sans-serif;
       display: none;
       text-shadow: 0 0 10px rgba(255, 255, 0, 0.7);
       z-index: 20;
@@ -55,26 +54,9 @@
       transform: translate(-50%, -50%);
       color: gold;
       font-size: 72px;
-      font-family: Arial, sans-serif;
       display: none;
       text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
       z-index: 20;
-    }
-    .admin-link {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      color: white;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 10px 15px;
-      border-radius: 5px;
-      text-decoration: none;
-      z-index: 30;
-      transition: all 0.3s;
-    }
-    .admin-link:hover {
-      background: rgba(50, 50, 50, 0.7);
-      transform: translateY(-2px);
     }
     .visitor-status {
       position: absolute;
@@ -96,45 +78,35 @@
   </style>
 </head>
 <body>
-  <div class="score-board">Score: <span id="score">0</span></div>
+  <div class="score-board">
+    Score: <span id="score">0</span><br>
+    Highscore: <span id="highscore">0</span>
+  </div>
   <div class="visitor-status" id="visitorStatus" hidden>Visitor status: <span>Checking...</span></div>
   <div class="combo-message" id="comboMessage">Combo x1!</div>
   <div class="level-up-message" id="levelUpMessage">Well Done! Level Up!</div>
   <canvas id="canvas"></canvas>
 
-  <!-- Firebase SDK -->
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { 
-      getFirestore, 
-      doc, 
-      getDoc, 
-      setDoc, 
-      updateDoc, 
-      increment,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyCghNEMQO1Uhd7PRm5NU5APqEMb_-tOLIY",
       authDomain: "couter-46e9a.firebaseapp.com",
       projectId: "couter-46e9a",
-      storageBucket: "couter-46e9a.firebasestorage.app",
+      storageBucket: "couter-46e9a.appspot.com",
       messagingSenderId: "295767535863",
       appId: "1:295767535863:web:c5e275d916c485a14e63f2",
       measurementId: "G-9XGV2R8QBR"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // Game variables
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     let score = 0;
+    let highscore = 0;
     let circles = [];
     let comboCount = 0;
     let lastClickTime = Date.now();
@@ -144,10 +116,24 @@
     let rainbowMode = false;
     let hue = 0;
 
-    // Visitor tracking function
+    const highscoreRef = doc(db, "game", "highscore");
+
+    async function loadHighscore() {
+      try {
+        const docSnap = await getDoc(highscoreRef);
+        if (docSnap.exists()) {
+          highscore = docSnap.data().value || 0;
+          document.getElementById('highscore').innerText = highscore;
+        }
+      } catch (e) {
+        console.error("Erreur chargement highscore:", e);
+      }
+    }
+
+    await loadHighscore();
+
     const trackVisitor = async () => {
       try {
-        // Generate visitor ID (store in localStorage if new)
         let visitorId = localStorage.getItem('visitorId');
         let isNewVisitor = false;
         const statusSpan = document.querySelector('#visitorStatus span');
@@ -163,20 +149,16 @@
           statusSpan.className = "visitor-returning";
         }
 
-        // Reference to analytics documents
         const analyticsRef = doc(db, "analytics", "visitorData");
         const visitorRef = doc(db, "visitors", visitorId);
-        
-        // Create/update visitor document
+
         await setDoc(visitorRef, {
           lastVisit: serverTimestamp(),
           visits: increment(1),
           isNew: isNewVisitor
         }, { merge: true });
-        
-        // Update analytics data
+
         const docSnap = await getDoc(analyticsRef);
-        
         if (docSnap.exists()) {
           await updateDoc(analyticsRef, {
             totalVisits: increment(1),
@@ -188,69 +170,46 @@
             uniqueVisitors: isNewVisitor ? 1 : 0
           });
         }
-        
+
       } catch (error) {
         console.error("Error tracking visitor:", error);
         document.querySelector('#visitorStatus span').textContent = "Error tracking";
       }
     };
 
-    // Initialize tracking
     trackVisitor();
-    
-    // Set canvas size to window dimensions
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Game functions
     function getCircleColor(combo) {
       if (rainbowMode) {
         hue = (hue + 1) % 360;
         return `hsl(${hue}, 100%, 50%)`;
       }
-
-      const colors = [
-        'red', 'green', 'cyan', 'orange', 'yellow',
-        'purple', 'pink', 'brown', 'gray'
-      ];
-
+      const colors = ['red', 'green', 'cyan', 'orange', 'yellow', 'purple', 'pink', 'brown', 'gray'];
       const currentRange = Math.floor(combo / 10);
-
       if (combo >= 0 && currentRange > maxComboRange) {
         maxComboRange = currentRange;
         currentComboColor = colors[Math.min(currentRange, colors.length - 1)];
       }
-
       return currentComboColor;
     }
 
     function drawCircles() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       circles.forEach((circle, index) => {
         const circleColor = getCircleColor(comboCount);
-
         ctx.beginPath();
         ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
         ctx.lineWidth = 3;
         ctx.strokeStyle = circleColor;
         ctx.stroke();
         ctx.closePath();
-
         circle.radius += 1;
         circle.opacity -= 0.02;
         circle.age += 1;
-
-        if (
-          circle.x - circle.radius < 0 || 
-          circle.x + circle.radius > canvas.width ||
-          circle.y - circle.radius < 0 || 
-          circle.y + circle.radius > canvas.height
-        ) {
-          circle.explode = true;
-        }
-
-        if (circle.age > 60 || circle.explode || circle.opacity <= 0) {
+        if (circle.age > 60 || circle.opacity <= 0) {
           circles.splice(index, 1);
         }
       });
@@ -260,14 +219,7 @@
       let count = 0;
       const intervalId = setInterval(() => {
         if (count < numberOfCircles) {
-          circles.push({
-            x: x,
-            y: y,
-            radius: 5,
-            opacity: 1,
-            age: 0,
-            explode: false,
-          });
+          circles.push({ x, y, radius: 5, opacity: 1, age: 0 });
           count++;
         } else {
           clearInterval(intervalId);
@@ -278,50 +230,43 @@
     function showComboMessage(combo) {
       const comboMessageElement = document.getElementById('comboMessage');
       comboMessageElement.innerText = `Combo x${combo}!`;
-
       if (combo >= 3) {
         comboMessageElement.style.display = 'block';
-        setTimeout(() => {
-          comboMessageElement.style.display = 'none';
-        }, 1000);
+        setTimeout(() => comboMessageElement.style.display = 'none', 1000);
       }
     }
 
     function showLevelUpMessage() {
       const levelUpElement = document.getElementById('levelUpMessage');
       levelUpElement.style.display = 'block';
-      setTimeout(() => {
-        levelUpElement.style.display = 'none';
-      }, 2000);
+      setTimeout(() => levelUpElement.style.display = 'none', 2000);
     }
 
-    canvas.addEventListener('click', (event) => {
+    canvas.addEventListener('click', async (event) => {
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-
       const currentTime = Date.now();
       const timeDifference = currentTime - lastClickTime;
-
-      if (timeDifference > comboTimeout) {
-        comboCount = 0;
-      }
-
+      if (timeDifference > comboTimeout) comboCount = 0;
       comboCount++;
       lastClickTime = currentTime;
-
-      if (comboCount >= 3) {
-        showComboMessage(comboCount);
-      }
-
+      if (comboCount >= 3) showComboMessage(comboCount);
       if (comboCount === 100 && !rainbowMode) {
         rainbowMode = true;
         showLevelUpMessage();
       }
-
-      score += 1;
+      score++;
       document.getElementById('score').innerText = score;
-
+      if (score > highscore) {
+        highscore = score;
+        document.getElementById('highscore').innerText = highscore;
+        try {
+          await setDoc(highscoreRef, { value: highscore });
+        } catch (e) {
+          console.error("Erreur de sauvegarde du highscore:", e);
+        }
+      }
       createCirclesAtInterval(x, y, 5, 100);
     });
 
