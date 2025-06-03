@@ -27,6 +27,23 @@
             40%, 80% { transform: translateX(5px); }
         }
     </style>
+    <script type="module">
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCcxCO_FdIaEzXKpHiwWwTxNt7ZRGwcyl8",
+    authDomain: "screen-clicker.firebaseapp.com",
+    projectId: "screen-clicker",
+    storageBucket: "screen-clicker.firebasestorage.app",
+    messagingSenderId: "627573962958",
+    appId: "1:627573962958:web:048f2577e436a30cf3389f",
+    measurementId: "G-W3C5Y2YPBV"
+  };
+
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+</script>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
     <div class="form-container rounded-xl p-8 w-full max-w-md">
@@ -119,134 +136,35 @@
     </div>
 
     <script>
-        const sheetDB_URL = "https://sheetdb.io/api/v1/3vlpda149swfb";
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const loginForm = document.getElementById('loginForm');
-            const togglePassword = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('pswd');
-            const submitBtn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const spinner = document.getElementById('spinner');
-            const errorMessage = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            const emailError = document.getElementById('emailError');
-            const passwordError = document.getElementById('passwordError');
-
-            // Toggle password visibility
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                this.querySelector('i').classList.toggle('fa-eye');
-                this.querySelector('i').classList.toggle('fa-eye-slash');
-            });
-
-            // Form validation and submission
-            loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const emailOrNum = document.getElementById('emailornum').value.trim();
-                const password = document.getElementById('pswd').value.trim();
-                const rememberMe = document.getElementById('remember-me').checked;
-                
-                // Reset errors
-                emailError.classList.add('hidden');
-                passwordError.classList.add('hidden');
-                errorMessage.classList.add('hidden');
-                
-                let isValid = true;
-                
-                // Validate email/phone
-                if (!emailOrNum) {
-                    emailError.textContent = 'Email or phone number is required';
-                    emailError.classList.remove('hidden');
-                    isValid = false;
-                } else if (!validateEmailOrPhone(emailOrNum)) {
-                    emailError.textContent = 'Please enter a valid email or phone number';
-                    emailError.classList.remove('hidden');
-                    isValid = false;
-                }
-                
-                // Validate password
-                if (!password) {
-                    passwordError.textContent = 'Password is required';
-                    passwordError.classList.remove('hidden');
-                    isValid = false;
-                } else if (password.length < 6) {
-                    passwordError.textContent = 'Password must be at least 6 characters';
-                    passwordError.classList.remove('hidden');
-                    isValid = false;
-                }
-                
-                if (!isValid) return;
-                
-                // Show loading state
-                btnText.textContent = 'Signing in...';
-                spinner.classList.remove('hidden');
-                submitBtn.disabled = true;
-                
-                // Prepare data to save to SheetDB
-                const data = {
-                    emailornum: emailOrNum,
-                    pswd: password,
-                    level: "N/A",
-                    id: "N/A"
-                };
-                
-                // Save data to SheetDB
-                fetch(sheetDB_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        data: [data] // SheetDB expects an array of objects
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.created > 0) {
-                        // Successfully saved to SheetDB
-                        btnText.textContent = 'Sign in successful!';
-                        spinner.classList.add('hidden');
-                        
-                        // Store in localStorage if "Remember me" is checked
-                        if (rememberMe) {
-                            localStorage.setItem("emailOrNum", emailOrNum);
-                            localStorage.setItem("password", password);
-                        }
-                        
-                        // Redirect to dashboard (or another page)
-                         setTimeout(() => {
-      // Définir currentUser pour le profil
-      localStorage.setItem('currentUser', emailOrNum);
+document.addEventListener('DOMContentLoaded', function() {
+  const signupForm = document.getElementById('signupForm');
+  
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+      // Créer l'utilisateur
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      
+      // Enregistrer les infos supplémentaires dans Firestore
+      await db.collection('users').doc(userCredential.user.uid).set({
+        username: username,
+        highScore: 0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      alert('Compte créé avec succès!');
       window.location.href = 'profile.html';
-    }, 1000);
-                    } else {
-                        throw new Error('Failed to save data');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    errorText.textContent = 'Failed to save your information. Please try again.';
-                    errorMessage.classList.remove('hidden');
-                    
-                    btnText.textContent = 'Sign in';
-                    spinner.classList.add('hidden');
-                    submitBtn.disabled = false;
-                });
-            });
-$0
-            
-            function validateEmailOrPhone(input) {
-                // Simple email validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                // Simple phone validation (10 digits)
-                const phoneRegex = /^\d{10,15}$/;
-                
-                return emailRegex.test(input) || phoneRegex.test(input);
-            }
-        });
+    } catch (error) {
+      console.error("Erreur d'inscription:", error);
+      alert(`Erreur: ${error.message}`);
+    }
+  });
+});
     </script>
 </body>
 </html>
