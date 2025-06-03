@@ -2,45 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Profile</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    // Configuration Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcxCO_FdIaEzXKpHiwWwTxNt7ZRGwcyl8",
+      authDomain: "screen-clicker.firebaseapp.com",
+      projectId: "screen-clicker",
+      storageBucket: "screen-clicker.firebasestorage.app",
+      messagingSenderId: "627573962958",
+      appId: "1:627573962958:web:048f2577e436a30cf3389f",
+      measurementId: "G-W3C5Y2YPBV"
+    };
+
+    // Initialise Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
   <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
-    <h1 class="text-2xl font-bold mb-4">Welcome!</h1>
-    <p id="userInfo" class="text-gray-700 mb-2"></p>
-    <p id="rememberInfo" class="text-gray-500"></p>
-    <button id="logoutBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Logout</button>
+    <h1 class="text-2xl font-bold mb-4">Bienvenue !</h1>
+    <p id="userInfo" class="text-gray-700 mb-2">Chargement des informations...</p>
+    <button id="logoutBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+      Se déconnecter
+    </button>
   </div>
 
   <script>
-    // Récupère les données
-    const currentUser = localStorage.getItem('currentUser');
-    const remembered = localStorage.getItem('rememberedIdentifier');
+    // Attendre que l'authentification soit prête
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          const userData = userDoc.data();
 
-    const userInfo = document.getElementById('userInfo');
-    const rememberInfo = document.getElementById('rememberInfo');
-
-    if (currentUser) {
-      userInfo.textContent = `You are logged in as: ${currentUser}`;
-      if (remembered && remembered === currentUser) {
-        rememberInfo.textContent = '✅ You chose “Remember me” on this device.';
+          document.getElementById('userInfo').textContent = 
+            `Utilisateur : ${userData?.username || 'inconnu'}\nEmail : ${user.email}`;
+        } catch (error) {
+          document.getElementById('userInfo').textContent = 'Erreur lors de la récupération des données utilisateur.';
+          console.error(error);
+        }
       } else {
-        rememberInfo.textContent = '🔒 You did NOT choose “Remember me”.';
+        // Pas connecté, redirection vers login
+        window.location.href = 'login.html';
       }
-    } else {
-      // Si on n’a pas de currentUser, renvoyer vers la page de login
-      window.location.href = 'login.html';
-    }
+    });
 
-    // Bouton Logout
+    // Bouton de déconnexion
     document.getElementById('logoutBtn').addEventListener('click', () => {
-      // Effacer la session courante
-      localStorage.removeItem('currentUser');
-      // (Optionnel) effacer le rememberedIdentifier
-      // localStorage.removeItem('rememberedIdentifier');
-      window.location.href = 'login.html';
+      auth.signOut().then(() => {
+        window.location.href = 'login.html';
+      });
     });
   </script>
 </body>
