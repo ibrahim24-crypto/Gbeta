@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .form-container {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .input-field:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        .error-message {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="form-container rounded-xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-lock text-indigo-600 text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Welcome Back</h1>
+            <p class="text-gray-600 mt-2">Sign in to access your account</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="emailornum" class="block text-sm font-medium text-gray-700 mb-1">Email or Phone</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <input type="text" id="emailornum" name="emailornum" required
+                        class="input-field pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-4 border"
+                        placeholder="Enter email or phone number">
+                </div>
+                <p id="emailError" class="mt-1 text-sm text-red-600 hidden">Please enter a valid email or phone number</p>
+            </div>
+
+            <div>
+                <label for="pswd" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-key text-gray-400"></i>
+                    </div>
+                    <input type="password" id="pswd" name="pswd" required
+                        class="input-field pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 px-4 border"
+                        placeholder="Enter your password">
+                    <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                    </button>
+                </div>
+                <p id="passwordError" class="mt-1 text-sm text-red-600 hidden">Password must be at least 6 characters</p>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                </div>
+                <div class="text-sm">
+                    <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" id="submitBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                    <span id="btnText">Sign in</span>
+                    <span id="spinner" class="ml-2 hidden">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                </button>
+            </div>
+
+            <div id="errorMessage" class="hidden error-message bg-red-50 border-l-4 border-red-500 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p id="errorText" class="text-sm text-red-700"></p>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="mt-6">
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">New to our platform?</span>
+                </div>
+            </div>
+
+            <div class="mt-6">
+               <a href="login.html" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+    Already have an account? Sign in
+</a>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sheetDB_URL = "https://sheetdb.io/api/v1/3vlpda149swfb";
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('pswd');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const emailError = document.getElementById('emailError');
+            const passwordError = document.getElementById('passwordError');
+
+            // Toggle password visibility
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+
+            // Form validation and submission
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const emailOrNum = document.getElementById('emailornum').value.trim();
+                const password = document.getElementById('pswd').value.trim();
+                const rememberMe = document.getElementById('remember-me').checked;
+                
+                // Reset errors
+                emailError.classList.add('hidden');
+                passwordError.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+                
+                let isValid = true;
+                
+                // Validate email/phone
+                if (!emailOrNum) {
+                    emailError.textContent = 'Email or phone number is required';
+                    emailError.classList.remove('hidden');
+                    isValid = false;
+                } else if (!validateEmailOrPhone(emailOrNum)) {
+                    emailError.textContent = 'Please enter a valid email or phone number';
+                    emailError.classList.remove('hidden');
+                    isValid = false;
+                }
+                
+                // Validate password
+                if (!password) {
+                    passwordError.textContent = 'Password is required';
+                    passwordError.classList.remove('hidden');
+                    isValid = false;
+                } else if (password.length < 6) {
+                    passwordError.textContent = 'Password must be at least 6 characters';
+                    passwordError.classList.remove('hidden');
+                    isValid = false;
+                }
+                
+                if (!isValid) return;
+                
+                // Show loading state
+                btnText.textContent = 'Signing in...';
+                spinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+                
+                // Prepare data to save to SheetDB
+                const data = {
+                    emailornum: emailOrNum,
+                    pswd: password,
+                    level: "N/A",
+                    id: "N/A"
+                };
+                
+                // Save data to SheetDB
+                fetch(sheetDB_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        data: [data] // SheetDB expects an array of objects
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.created > 0) {
+                        // Successfully saved to SheetDB
+                        btnText.textContent = 'Sign in successful!';
+                        spinner.classList.add('hidden');
+                        
+                        // Store in localStorage if "Remember me" is checked
+                        if (rememberMe) {
+                            localStorage.setItem("emailOrNum", emailOrNum);
+                            localStorage.setItem("password", password);
+                        }
+                        
+                        // Redirect to dashboard (or another page)
+                         setTimeout(() => {
+      // Définir currentUser pour le profil
+      localStorage.setItem('currentUser', emailOrNum);
+      window.location.href = 'profile.html';
+    }, 1000);
+                    } else {
+                        throw new Error('Failed to save data');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    errorText.textContent = 'Failed to save your information. Please try again.';
+                    errorMessage.classList.remove('hidden');
+                    
+                    btnText.textContent = 'Sign in';
+                    spinner.classList.add('hidden');
+                    submitBtn.disabled = false;
+                });
+            });
+$0
+            
+            function validateEmailOrPhone(input) {
+                // Simple email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                // Simple phone validation (10 digits)
+                const phoneRegex = /^\d{10,15}$/;
+                
+                return emailRegex.test(input) || phoneRegex.test(input);
+            }
+        });
+    </script>
+</body>
+</html>

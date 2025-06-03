@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
+    <h1 class="text-2xl font-bold mb-4">Welcome!</h1>
+    <p id="userInfo" class="text-gray-700 mb-2"></p>
+    <p id="rememberInfo" class="text-gray-500"></p>
+    <button id="logoutBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Logout</button>
+  </div>
+
+  <script>
+    // Récupère les données
+    const currentUser = localStorage.getItem('currentUser');
+    const remembered = localStorage.getItem('rememberedIdentifier');
+
+    const userInfo = document.getElementById('userInfo');
+    const rememberInfo = document.getElementById('rememberInfo');
+
+    if (currentUser) {
+      userInfo.textContent = `You are logged in as: ${currentUser}`;
+      if (remembered && remembered === currentUser) {
+        rememberInfo.textContent = '✅ You chose “Remember me” on this device.';
+      } else {
+        rememberInfo.textContent = '🔒 You did NOT choose “Remember me”.';
+      }
+    } else {
+      // Si on n’a pas de currentUser, renvoyer vers la page de login
+      window.location.href = 'login.html';
+    }
+
+    // Bouton Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      // Effacer la session courante
+      localStorage.removeItem('currentUser');
+      // (Optionnel) effacer le rememberedIdentifier
+      // localStorage.removeItem('rememberedIdentifier');
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>
