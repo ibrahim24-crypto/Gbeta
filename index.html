@@ -87,195 +87,103 @@
   <div class="level-up-message" id="levelUpMessage">Well Done! Level Up!</div>
   <canvas id="canvas"></canvas>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+  <script src="index.js"></script>
+  <script>
+    // db.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCghNEMQO1Uhd7PRm5NU5APqEMb_-tOLIY",
-      authDomain: "couter-46e9a.firebaseapp.com",
-      projectId: "couter-46e9a",
-      storageBucket: "couter-46e9a.appspot.com",
-      messagingSenderId: "295767535863",
-      appId: "1:295767535863:web:c5e275d916c485a14e63f2",
-      measurementId: "G-9XGV2R8QBR"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyCghNEMQO1Uhd7PRm5NU5APqEMb_-tOLIY",
+  authDomain: "couter-46e9a.firebaseapp.com",
+  projectId: "couter-46e9a",
+  storageBucket: "couter-46e9a.appspot.com",
+  messagingSenderId: "295767535863",
+  appId: "1:295767535863:web:c5e275d916c485a14e63f2",
+  measurementId: "G-9XGV2R8QBR"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let score = 0;
-    let highscore = 0;
-    let circles = [];
-    let comboCount = 0;
-    let lastClickTime = Date.now();
-    const comboTimeout = 500;
-    let currentComboColor = 'red';
-    let maxComboRange = 0;
-    let rainbowMode = false;
-    let hue = 0;
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+const highscoreRef = doc(db, "game", "highscore");
 
-    const highscoreRef = doc(db, "game", "highscore");
+export let highscore = 0;
 
-    async function loadHighscore() {
-      try {
-        const docSnap = await getDoc(highscoreRef);
-        if (docSnap.exists()) {
-          highscore = docSnap.data().value || 0;
-          document.getElementById('highscore').innerText = highscore;
-        }
-      } catch (e) {
-        console.error("Erreur chargement highscore:", e);
-      }
+export async function loadHighscore() {
+  try {
+    const docSnap = await getDoc(highscoreRef);
+    if (docSnap.exists()) {
+      highscore = docSnap.data().value || 0;
+      document.getElementById('highscore').innerText = highscore;
+    }
+  } catch (e) {
+    console.error("Erreur chargement highscore:", e);
+  }
+}
+
+export async function saveHighscore(score) {
+  try {
+    await setDoc(highscoreRef, { value: score });
+  } catch (e) {
+    console.error("Erreur de sauvegarde du highscore:", e);
+  }
+}
+
+export async function trackVisitor() {
+  try {
+    let username = localStorage.getItem('playerName');
+    let isNewVisitor = false;
+    const statusSpan = document.querySelector('#visitorStatus span');
+
+    if (!username) {
+      username = prompt("Enter your player name:")?.trim();
+      if (!username) username = 'Guest_' + Math.floor(Math.random() * 10000);
+      localStorage.setItem('playerName', username);
+      isNewVisitor = true;
+      statusSpan.textContent = "New Player: " + username;
+      statusSpan.className = "visitor-new";
+    } else {
+      statusSpan.textContent = "Welcome Back: " + username;
+      statusSpan.className = "visitor-returning";
     }
 
-    await loadHighscore();
+    const analyticsRef = doc(db, "analytics", "visitorData");
+    const visitorRef = doc(db, "visitors", username);
 
-    const trackVisitor = async () => {
-      try {
-        let visitorId = localStorage.getItem('visitorId');
-        let isNewVisitor = false;
-        const statusSpan = document.querySelector('#visitorStatus span');
+    await setDoc(visitorRef, {
+      lastVisit: serverTimestamp(),
+      visits: increment(1),
+      isNew: isNewVisitor,
+      name: username
+    }, { merge: true });
 
-        if (!visitorId) {
-          visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
-          localStorage.setItem('visitorId', visitorId);
-          isNewVisitor = true;
-          statusSpan.textContent = "New Visitor";
-          statusSpan.className = "visitor-new";
-        } else {
-          statusSpan.textContent = "Returning Visitor";
-          statusSpan.className = "visitor-returning";
-        }
-
-        const analyticsRef = doc(db, "analytics", "visitorData");
-        const visitorRef = doc(db, "visitors", visitorId);
-
-        await setDoc(visitorRef, {
-          lastVisit: serverTimestamp(),
-          visits: increment(1),
-          isNew: isNewVisitor
-        }, { merge: true });
-
-        const docSnap = await getDoc(analyticsRef);
-        if (docSnap.exists()) {
-          await updateDoc(analyticsRef, {
-            totalVisits: increment(1),
-            uniqueVisitors: isNewVisitor ? increment(1) : increment(0)
-          });
-        } else {
-          await setDoc(analyticsRef, {
-            totalVisits: 1,
-            uniqueVisitors: isNewVisitor ? 1 : 0
-          });
-        }
-
-      } catch (error) {
-        console.error("Error tracking visitor:", error);
-        document.querySelector('#visitorStatus span').textContent = "Error tracking";
-      }
-    };
-
-    trackVisitor();
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    function getCircleColor(combo) {
-      if (rainbowMode) {
-        hue = (hue + 1) % 360;
-        return `hsl(${hue}, 100%, 50%)`;
-      }
-      const colors = ['red', 'green', 'cyan', 'orange', 'yellow', 'purple', 'pink', 'brown', 'gray'];
-      const currentRange = Math.floor(combo / 10);
-      if (combo >= 0 && currentRange > maxComboRange) {
-        maxComboRange = currentRange;
-        currentComboColor = colors[Math.min(currentRange, colors.length - 1)];
-      }
-      return currentComboColor;
-    }
-
-    function drawCircles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      circles.forEach((circle, index) => {
-        const circleColor = getCircleColor(comboCount);
-        ctx.beginPath();
-        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = circleColor;
-        ctx.stroke();
-        ctx.closePath();
-        circle.radius += 1;
-        circle.opacity -= 0.02;
-        circle.age += 1;
-        if (circle.age > 60 || circle.opacity <= 0) {
-          circles.splice(index, 1);
-        }
+    const docSnap = await getDoc(analyticsRef);
+    if (docSnap.exists()) {
+      await updateDoc(analyticsRef, {
+        totalVisits: increment(1),
+        uniqueVisitors: isNewVisitor ? increment(1) : increment(0)
+      });
+    } else {
+      await setDoc(analyticsRef, {
+        totalVisits: 1,
+        uniqueVisitors: isNewVisitor ? 1 : 0
       });
     }
 
-    function createCirclesAtInterval(x, y, numberOfCircles, interval) {
-      let count = 0;
-      const intervalId = setInterval(() => {
-        if (count < numberOfCircles) {
-          circles.push({ x, y, radius: 5, opacity: 1, age: 0 });
-          count++;
-        } else {
-          clearInterval(intervalId);
-        }
-      }, interval);
-    }
+  } catch (error) {
+    console.error("Error tracking visitor:", error);
+    document.querySelector('#visitorStatus span').textContent = "Error tracking";
+  }
+}
 
-    function showComboMessage(combo) {
-      const comboMessageElement = document.getElementById('comboMessage');
-      comboMessageElement.innerText = `Combo x${combo}!`;
-      if (combo >= 3) {
-        comboMessageElement.style.display = 'block';
-        setTimeout(() => comboMessageElement.style.display = 'none', 1000);
-      }
-    }
-
-    function showLevelUpMessage() {
-      const levelUpElement = document.getElementById('levelUpMessage');
-      levelUpElement.style.display = 'block';
-      setTimeout(() => levelUpElement.style.display = 'none', 2000);
-    }
-
-    canvas.addEventListener('click', async (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const currentTime = Date.now();
-      const timeDifference = currentTime - lastClickTime;
-      if (timeDifference > comboTimeout) comboCount = 0;
-      comboCount++;
-      lastClickTime = currentTime;
-      if (comboCount >= 3) showComboMessage(comboCount);
-      if (comboCount === 100 && !rainbowMode) {
-        rainbowMode = true;
-        showLevelUpMessage();
-      }
-      score++;
-      document.getElementById('score').innerText = score;
-      if (score > highscore) {
-        highscore = score;
-        document.getElementById('highscore').innerText = highscore;
-        try {
-          await setDoc(highscoreRef, { value: highscore });
-        } catch (e) {
-          console.error("Erreur de sauvegarde du highscore:", e);
-        }
-      }
-      createCirclesAtInterval(x, y, 5, 100);
-    });
-
-    function gameLoop() {
-      drawCircles();
-      requestAnimationFrame(gameLoop);
-    }
-
-    gameLoop();
   </script>
 </body>
 </html>
