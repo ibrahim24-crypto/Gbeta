@@ -90,27 +90,22 @@
   <script src="index.js"></script>
   <script>
     // db.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  increment,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCghNEMQO1Uhd7PRm5NU5APqEMb_-tOLIY",
-  authDomain: "couter-46e9a.firebaseapp.com",
-  projectId: "couter-46e9a",
-  storageBucket: "couter-46e9a.appspot.com",
-  messagingSenderId: "295767535863",
-  appId: "1:295767535863:web:c5e275d916c485a14e63f2",
-  measurementId: "G-9XGV2R8QBR"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcxCO_FdIaEzXKpHiwWwTxNt7ZRGwcyl8",
+      authDomain: "screen-clicker.firebaseapp.com",
+      projectId: "screen-clicker",
+      storageBucket: "screen-clicker.appspot.com",
+      messagingSenderId: "627573962958",
+      appId: "1:627573962958:web:048f2577e436a30cf3389f",
+      measurementId: "G-W3C5Y2YPBV"
+    };
 
+
+ 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 const highscoreRef = doc(db, "game", "highscore");
